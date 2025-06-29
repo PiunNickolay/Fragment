@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">NMedia</string>
+    <string name="nmedia">NMedia!!</string>
+    <string name="avatar">avatar</string>
+    <string name="menu">menu</string>
+    <string name="like">like</string>
+    <string name="share">share</string>
+    <string name="view">view</string>
+    <string name="menu_remove">Remove</string>
+    <string name="post_text">Post text</string>
+    <string name="post_save">Save</string>
+    <string name="error_empty_content">Content can\'t be empty</string>
+    <string name="menu_edit">Edit</string>
+    <string name="cancel">cancel</string>
+    <string name="edit_message">Edit message</string>
+    <string name="edit">Edit</string>
+    <string name="chooser_share_post">Share post</string>
+    <string name="description_post_save">Save</string>
+    <string name="play">Play</string>
+    <string name="the_post_is_missing">The post is missing</string>
+</resources>
