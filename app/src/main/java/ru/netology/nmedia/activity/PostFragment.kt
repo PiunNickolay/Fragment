@@ -13,7 +13,10 @@ import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import ru.netology.nmedia.Counts
 import ru.netology.nmedia.R
+import ru.netology.nmedia.adapter.OnInteractionListener
+import ru.netology.nmedia.adapter.PostViewHolder
 import ru.netology.nmedia.databinding.FragmentPostBinding
+import ru.netology.nmedia.dto.Post
 import ru.netology.nmedia.viewmodel.PostViewModel
 
 class PostFragment : Fragment() {
@@ -21,83 +24,61 @@ class PostFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         val binding = FragmentPostBinding.inflate(inflater, container, false)
-        val viewModel: PostViewModel by viewModels(ownerProducer = ::requireParentFragment)
         val card = binding.post
+        val viewModel: PostViewModel by viewModels(ownerProducer = ::requireParentFragment)
         val postId = arguments?.getLong("postId") ?: return binding.root
+
+        val onInteractionListener = object : OnInteractionListener {
+            override fun onLikeListener(post: Post) {
+                viewModel.likeById(post.id)
+            }
+
+            override fun onShareListener(post: Post) {
+                val intent = Intent().apply {
+                    action = Intent.ACTION_SEND
+                    putExtra(Intent.EXTRA_TEXT, post.content)
+                    type = "text/plain"
+                }
+                val chooser = Intent.createChooser(intent, getString(R.string.chooser_share_post))
+                startActivity(chooser)
+                viewModel.shareById(post.id)
+            }
+
+            override fun onEditListener(post: Post) {
+                viewModel.edit(post)
+                findNavController().navigate(
+                    R.id.action_postFragment_to_newPostFragment,
+                    Bundle().apply {
+                        putString("textArg", post.content)
+                    }
+                )
+            }
+
+            override fun onRemoveListener(post: Post) {
+                viewModel.removeById(post.id)
+                findNavController().navigateUp()
+            }
+
+            override fun onPost(post: Post) {
+            }
+        }
+
+        val holder = PostViewHolder(card, onInteractionListener)
 
         viewModel.data.observe(viewLifecycleOwner) { posts ->
             val post = posts.find { it.id == postId }
             if (post == null) {
-                Toast.makeText(context, getString(R.string.the_post_is_missing), Toast.LENGTH_LONG)
-                    .show()
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.the_post_is_missing),
+                    Toast.LENGTH_LONG
+                ).show()
                 findNavController().navigateUp()
                 return@observe
             }
-
-            with(card) {
-                author.text = post.author
-                published.text = post.published
-                content.text = post.content
-
-                like.isChecked = post.likedByMe
-                like.text = Counts.countFormat(post.likeCount)
-                like.setOnClickListener {
-                    viewModel.likeById(post.id)
-                }
-
-                share.text = Counts.countFormat(post.shareCount)
-                share.setOnClickListener {
-                    viewModel.shareById(post.id)
-                    val intent = Intent().apply {
-                        action = Intent.ACTION_SEND
-                        putExtra(Intent.EXTRA_TEXT, post.content)
-                        type = "text/plain"
-                    }
-                    val sharedIntent =
-                        Intent.createChooser(intent, getString(R.string.chooser_share_post))
-                    startActivity(sharedIntent)
-                }
-
-                view.text = Counts.countFormat(post.viewCount)
-
-                menu.setOnClickListener {
-                    PopupMenu(it.context, it).apply {
-                        inflate(R.menu.post_actions)
-                        setOnMenuItemClickListener { item ->
-                            when (item.itemId) {
-                                R.id.remove -> {
-                                    viewModel.removeById(post.id)
-                                    findNavController().navigateUp()
-                                    true
-                                }
-
-                                R.id.edit -> {
-                                    viewModel.edit(post)
-                                    findNavController().navigate(
-                                        R.id.action_feedFragment_to_newPostFragment,
-                                        Bundle().apply { putString("textArg", post.content) }
-                                    )
-                                    true
-                                }
-
-                                else -> false
-                            }
-                        }
-                    }.show()
-                }
-                if (!post.video.isNullOrBlank()) {
-                    videoContainer.visibility = View.VISIBLE
-                    playButton.setOnClickListener {
-                        val intent = Intent(Intent.ACTION_VIEW, post.video.toUri())
-                        startActivity(intent)
-                    }
-                } else {
-                    videoContainer.visibility = View.GONE
-                }
-
-            }
+            holder.bind(post)
         }
 
         return binding.root
